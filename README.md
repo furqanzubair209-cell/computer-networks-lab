@@ -5,14 +5,14 @@
 ![Networking](https://img.shields.io/badge/Networking-005FAD?style=for-the-badge&logoColor=white)
 ![Routing](https://img.shields.io/badge/Routing-0A7E8C?style=for-the-badge&logoColor=white)
 
-Packet Tracer labs and router configurations from my Computer Networks course. Each lab is kept in its own folder and includes the `.pkt` file for the network topology.
+Packet Tracer labs and router configurations from my Computer Networks course. Each lab is kept in its own folder and includes the Packet Tracer file for the network topology.
 
 ## Projects
 
 | Folder | Description |
 |---|---|
-| [lab-02](./lab-02) | Network topology and device configuration built in Cisco Packet Tracer (`cn lab2.pkt`). |
-| [router-configuration](./router-configuration) | Router configuration setup in Cisco Packet Tracer (`Router config.pkt`). |
+| Lab 2 | Network topology and device configuration built in Cisco Packet Tracer. |
+| Router Configuration | Router configuration setup in Cisco Packet Tracer. |
 
 ## Tech Stack
 
@@ -27,7 +27,7 @@ Packet Tracer labs and router configurations from my Computer Networks course. E
    git clone https://github.com/furqanzubair209-cell/computer-networks-lab.git
 ```
 2. Install [Cisco Packet Tracer](https://www.netacad.com/courses/packet-tracer).
-3. Open the `.pkt` file you want from its folder.
+3. Open the Packet Tracer file you want from its folder.
 
 ## Author
 
