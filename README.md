@@ -4,13 +4,13 @@
 
 ![Cisco](https://img.shields.io/badge/Cisco-1BA0D7?style=for-the-badge&logo=cisco&logoColor=white)
 ![Packet Tracer](https://img.shields.io/badge/Packet%20Tracer-9.0%2B-1BA0D7?style=for-the-badge)
-![Labs](https://img.shields.io/badge/Labs-4-005FAD?style=for-the-badge)
+![Labs](https://img.shields.io/badge/Labs-5-005FAD?style=for-the-badge)
 ![Routing](https://img.shields.io/badge/Routing-Static%20%7C%20RIP-0A7E8C?style=for-the-badge)
 ![Subnetting](https://img.shields.io/badge/Subnetting-FLSM%20%7C%20VLSM-0A7E8C?style=for-the-badge)
 
-**Hands-on Packet Tracer labs from my Computer Networks course: LAN design, router configuration, DHCP, fixed-length and variable-length subnetting, and static routing.**
+**Hands-on Packet Tracer labs from my Computer Networks course: LAN design, router configuration, router-based DHCP, fixed-length and variable-length subnetting, and static routing.**
 
-[Labs](#labs-at-a-glance) • [Lab 2](#1-lab-2--lan-with-dhcp-server) • [Router Config](#2-router-configuration--two-networks) • [FLSM](#3-flsm--fixed-length-subnetting) • [VLSM](#4-vlsm--variable-length-subnetting) • [Getting Started](#getting-started)
+[Labs](#labs-at-a-glance) • [Lab 2](#1-lab-2--lan-with-dhcp-server) • [Router Config](#2-router-configuration--two-networks) • [FLSM](#3-flsm--fixed-length-subnetting) • [VLSM](#4-vlsm--variable-length-subnetting) • [VLSM + DHCP](#5-vlsm-new--two-router-vlsm-with-dhcp) • [Getting Started](#getting-started)
 
 </div>
 
@@ -24,6 +24,7 @@
 | 2 | [`Router config.pkt`](Router%20config.pkt) | Router connecting two networks | 1 router, 2 switches, 6 PCs | Router interfaces, default gateways, inter-network routing |
 | 3 | [`flsm.pkt`](flsm.pkt) | Fixed-length subnet masking | 1 router, 2 switches, 10 PCs | `/25` subnets, router-based DHCP pools, RIP |
 | 4 | [`vlsm task.pkt`](vlsm%20task.pkt) | Variable-length subnet masking | 4 routers, 4 switches, 4 PCs | `/25` `/26` `/27` `/28` LANs, `/30` serial links, static routes |
+| 5 | [`vlsm new.pkt`](vlsm%20new.pkt) | VLSM with router DHCP | 2 routers, 4 switches, 16 PCs | `/26` `/27` `/27` `/28` LANs, `/30` serial link, DHCP pools, static routes |
 
 All files were saved with **Cisco Packet Tracer 9.0**, so open them with 9.0 or later.
 
@@ -249,6 +250,108 @@ R1(config)# ip route 192.168.1.224 255.255.255.240 192.168.1.242
 
 ---
 
+## 5. VLSM New — Two-Router VLSM with DHCP
+
+**Objective:** Divide `192.168.100.0/24` into four LANs sized to their host counts, join two routers over a single `/30` serial link, let each router hand out addresses with DHCP, and use static routes so every LAN can reach every other LAN.
+
+### Topology
+
+```mermaid
+graph LR
+    subgraph R1G["R1"]
+        direction TB
+        L1["LAN1 · 192.168.100.0/26<br/>Switch0 · 8 PCs"]
+        L2["LAN2 · 192.168.100.64/27<br/>Switch1 · 5 PCs"]
+    end
+    subgraph R2G["R2"]
+        direction TB
+        L3["LAN3 · 192.168.100.96/27<br/>Switch2 · 2 PCs"]
+        L4["LAN4 · 192.168.100.128/28<br/>Switch3 · 1 PC"]
+    end
+    L1 ---|"Gi0/0/0 .1"| R1["R1"]
+    L2 ---|"Gi0/0/1 .65"| R1
+    R1 ===|"Serial0/1/0<br/>192.168.100.144/30<br/>.145 DCE ↔ .146"| R2["R2"]
+    R2 ---|"Gi0/0/0 .97"| L3
+    R2 ---|"Gi0/0/1 .129"| L4
+```
+
+### Subnet plan
+
+| Segment | Network | Mask | Usable range | Usable hosts | Gateway / interface | PCs cabled |
+|---------|---------|------|--------------|--------------|---------------------|------------|
+| LAN1 | 192.168.100.0 | /26 (255.255.255.192) | .1 – .62 | 62 | R1 Gi0/0/0 · 192.168.100.1 | 8 (`PC0`–`PC7`) |
+| LAN2 | 192.168.100.64 | /27 (255.255.255.224) | .65 – .94 | 30 | R1 Gi0/0/1 · 192.168.100.65 | 5 (`PC10`–`PC14`) |
+| LAN3 | 192.168.100.96 | /27 (255.255.255.224) | .97 – .126 | 30 | R2 Gi0/0/0 · 192.168.100.97 | 2 (`PC15`–`PC16`) |
+| LAN4 | 192.168.100.128 | /28 (255.255.255.240) | .129 – .142 | 14 | R2 Gi0/0/1 · 192.168.100.129 | 1 (`PC17`) |
+| R1–R2 link | 192.168.100.144 | /30 (255.255.255.252) | .145 – .146 | 2 | R1 Serial0/1/0 `.145` (DCE) · R2 Serial0/1/0 `.146` | n/a |
+
+Subnets are allocated from largest to smallest and sit back to back, so nothing overlaps. Addresses from `192.168.100.148` upward stay free for future growth.
+
+### DHCP pools
+
+Each router serves the LANs it connects to, and the gateway address is excluded from every pool.
+
+| Router | Pool | Network | Default router | Excluded address |
+|--------|------|---------|----------------|------------------|
+| R1 | `LAN1` | 192.168.100.0 255.255.255.192 | 192.168.100.1 | 192.168.100.1 |
+| R1 | `LAN2` | 192.168.100.64 255.255.255.224 | 192.168.100.65 | 192.168.100.65 |
+| R2 | `LAN3` | 192.168.100.96 255.255.255.224 | 192.168.100.97 | 192.168.100.97 |
+| R2 | `LAN4` | 192.168.100.128 255.255.255.240 | 192.168.100.129 | 192.168.100.129 |
+
+All PCs are set to **DHCP**.
+
+### Static routes
+
+Each router only knows its own LANs and the serial link, so it needs a route to the LANs behind the other router.
+
+| Router | Destination | Mask | Next hop |
+|--------|-------------|------|----------|
+| R1 | 192.168.100.96 | 255.255.255.224 | 192.168.100.146 |
+| R1 | 192.168.100.128 | 255.255.255.240 | 192.168.100.146 |
+| R2 | 192.168.100.0 | 255.255.255.192 | 192.168.100.145 |
+| R2 | 192.168.100.64 | 255.255.255.224 | 192.168.100.145 |
+
+### Key configuration (R1 shown)
+
+```text
+R1(config)# interface GigabitEthernet0/0/0
+R1(config-if)# ip address 192.168.100.1 255.255.255.192
+R1(config-if)# no shutdown
+
+R1(config)# interface GigabitEthernet0/0/1
+R1(config-if)# ip address 192.168.100.65 255.255.255.224
+R1(config-if)# no shutdown
+
+R1(config)# interface Serial0/1/0
+R1(config-if)# ip address 192.168.100.145 255.255.255.252
+R1(config-if)# clock rate 64000
+R1(config-if)# no shutdown
+
+R1(config)# ip dhcp excluded-address 192.168.100.1
+R1(config)# ip dhcp excluded-address 192.168.100.65
+R1(config)# ip dhcp pool LAN1
+R1(dhcp-config)# network 192.168.100.0 255.255.255.192
+R1(dhcp-config)# default-router 192.168.100.1
+R1(config)# ip dhcp pool LAN2
+R1(dhcp-config)# network 192.168.100.64 255.255.255.224
+R1(dhcp-config)# default-router 192.168.100.65
+
+R1(config)# ip route 192.168.100.96 255.255.255.224 192.168.100.146
+R1(config)# ip route 192.168.100.128 255.255.255.240 192.168.100.146
+```
+
+`R2` mirrors this with `192.168.100.97/27` on Gi0/0/0, `192.168.100.129/28` on Gi0/0/1, `192.168.100.146/30` on Serial0/1/0 (no clock rate, since R1 is the DCE side), pools `LAN3` and `LAN4`, and static routes back to `192.168.100.0/26` and `192.168.100.64/27` via `192.168.100.145`.
+
+### Verify
+
+1. Open a PC → **Desktop → IP Configuration**, select **DHCP**, and confirm the address falls inside that LAN's range (for example `PC0` gets `192.168.100.2` or above, `PC17` gets `192.168.100.130` or above).
+2. Ping from `PC0` (LAN1) to `PC17` (LAN4). The packet crosses both routers and the serial link.
+3. Ping between LAN1 and LAN2 to confirm routing through R1, and between LAN3 and LAN4 to confirm routing through R2.
+4. Run `show ip route` on R1 and R2 to check the connected and static (`S`) entries.
+5. Run `show ip dhcp binding` on each router to see which PCs leased which address.
+
+---
+
 ## Getting Started
 
 1. Clone the repository:
@@ -270,16 +373,17 @@ computer-networks-lab/
 ├── Router config.pkt   # Router connecting two networks
 ├── flsm.pkt            # Fixed-length subnetting (/25 x 2)
 ├── vlsm task.pkt       # Variable-length subnetting, 4 routers
+├── vlsm new.pkt        # VLSM with router DHCP, 2 routers
 └── README.md
 ```
 
 ## Skills Practiced
 
 - IPv4 addressing and subnetting (FLSM and VLSM)
-- Router interface, serial link, and static route configuration
-- DHCP on both a dedicated server and a router
+- Router interface, serial link (DCE clock rate), and static route configuration
+- DHCP on both a dedicated server and on routers, with excluded gateway addresses
 - Hierarchical LAN design with core and access switches
-- Testing and troubleshooting with `ping`, `tracert`, and `show ip route`
+- Testing and troubleshooting with `ping`, `tracert`, `show ip route`, and `show ip dhcp binding`
 
 ## Tech Stack
 
