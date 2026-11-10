@@ -1,16 +1,17 @@
 <div align="center">
 
-![Header](https://capsule-render.vercel.app/api?type=waving&color=0:1BA0D7,100:005FAD&height=200&section=header&text=Computer%20Networks%20Lab&fontSize=42&fontColor=ffffff&desc=Cisco%20Packet%20Tracer%20%E2%80%A2%20Subnetting%20%E2%80%A2%20Routing%20%E2%80%A2%20DHCP&descSize=17&descAlignY=68)
+![Header](https://capsule-render.vercel.app/api?type=waving&color=0:1BA0D7,100:005FAD&height=200&section=header&text=Computer%20Networks%20Lab&fontSize=42&fontColor=ffffff&desc=Cisco%20Packet%20Tracer%20%E2%80%A2%20Subnetting%20%E2%80%A2%20Routing%20%E2%80%A2%20DHCP%20%E2%80%A2%20RIP&descSize=17&descAlignY=68)
 
 ![Cisco](https://img.shields.io/badge/Cisco-1BA0D7?style=for-the-badge&logo=cisco&logoColor=white)
 ![Packet Tracer](https://img.shields.io/badge/Packet%20Tracer-9.0%2B-1BA0D7?style=for-the-badge)
-![Labs](https://img.shields.io/badge/Labs-5-005FAD?style=for-the-badge)
-![Routing](https://img.shields.io/badge/Routing-Static%20%7C%20RIP-0A7E8C?style=for-the-badge)
+![Labs](https://img.shields.io/badge/Labs-6-005FAD?style=for-the-badge)
+![Routing](https://img.shields.io/badge/Routing-Static%20%7C%20RIPv2-0A7E8C?style=for-the-badge)
 ![Subnetting](https://img.shields.io/badge/Subnetting-FLSM%20%7C%20VLSM-0A7E8C?style=for-the-badge)
+![DHCP](https://img.shields.io/badge/DHCP-Server%20%7C%20Router-049fd9?style=for-the-badge)
 
-**Hands-on Packet Tracer labs from my Computer Networks course: LAN design, router configuration, router-based DHCP, fixed-length and variable-length subnetting, and static routing.**
+**Hands-on Packet Tracer labs from my Computer Networks course: LAN design, router configuration, router-based DHCP, fixed-length and variable-length subnetting, static routing, and dynamic routing with RIPv2.**
 
-[Labs](#labs-at-a-glance) • [Lab 2](#1-lab-2--lan-with-dhcp-server) • [Router Config](#2-router-configuration--two-networks) • [FLSM](#3-flsm--fixed-length-subnetting) • [VLSM](#4-vlsm--variable-length-subnetting) • [VLSM + DHCP](#5-vlsm-new--two-router-vlsm-with-dhcp) • [Getting Started](#getting-started)
+[Labs](#labs-at-a-glance) • [Lab 2](#1-lab-2--lan-with-dhcp-server) • [Router Config](#2-router-configuration--two-networks) • [FLSM](#3-flsm--fixed-length-subnetting) • [VLSM](#4-vlsm--variable-length-subnetting) • [VLSM + DHCP](#5-vlsm-new--two-router-vlsm-with-dhcp) • [RIP](#6-rip--five-router-ripv2-network) • [Getting Started](#getting-started)
 
 </div>
 
@@ -25,6 +26,7 @@
 | 3 | [`flsm.pkt`](flsm.pkt) | Fixed-length subnet masking | 1 router, 2 switches, 10 PCs | `/25` subnets, router-based DHCP pools, RIP |
 | 4 | [`vlsm task.pkt`](vlsm%20task.pkt) | Variable-length subnet masking | 4 routers, 4 switches, 4 PCs | `/25` `/26` `/27` `/28` LANs, `/30` serial links, static routes |
 | 5 | [`vlsm new.pkt`](vlsm%20new.pkt) | VLSM with router DHCP | 2 routers, 4 switches, 16 PCs | `/26` `/27` `/27` `/28` LANs, `/30` serial link, DHCP pools, static routes |
+| 6 | [`rip.pkt`](rip.pkt) | Dynamic routing with RIPv2 | 5 routers, 5 switches, 10 PCs | RIP version 2, `no auto-summary`, `/30` serial links, router DHCP, multi-hop convergence |
 
 All files were saved with **Cisco Packet Tracer 9.0**, so open them with 9.0 or later.
 
@@ -352,6 +354,126 @@ R1(config)# ip route 192.168.100.128 255.255.255.240 192.168.100.146
 
 ---
 
+## 6. RIP — Five-Router RIPv2 Network
+
+**Objective:** Connect five routers, each with its own `/24` LAN, over `/30` serial links, and let **RIP version 2** learn every route dynamically instead of typing static routes by hand. Each router also serves DHCP to its own LAN, so a PC on one end of the chain can reach a PC on the other end with zero static routes.
+
+### Topology
+
+```mermaid
+graph LR
+    subgraph LAN1["LAN1 · 192.168.1.0/24"]
+        direction TB
+        PA["PC0 · PC1"] --- SA["Switch0"]
+    end
+    subgraph LAN2["LAN2 · 192.168.2.0/24"]
+        direction TB
+        PB["PC2 · PC3"] --- SB["Switch1"]
+    end
+    subgraph LAN3["LAN3 · 192.168.3.0/24"]
+        direction TB
+        PC["PC4 · PC5"] --- SC["Switch2"]
+    end
+    subgraph LAN4["LAN4 · 192.168.4.0/24"]
+        direction TB
+        PD["PC6 · PC7"] --- SD["Switch3"]
+    end
+    subgraph LAN5["LAN5 · 192.168.5.0/24"]
+        direction TB
+        PE["PC8 · PC9"] --- SE["Switch4"]
+    end
+    SA ---|"Gi0/0/0 .1"| R1["R1"]
+    SB ---|"Gi0/0/0 .1"| R2["R2"]
+    SC ---|"Gi0/0/0 .1"| R3["R3"]
+    SD ---|"Gi0/0/0 .1"| R4["R4"]
+    SE ---|"Gi0/0/0 .1"| R5["R5"]
+    R1 ===|"10.0.12.0/30"| R2
+    R2 ===|"10.0.23.0/30"| R3
+    R3 ===|"10.0.34.0/30"| R4
+    R4 ===|"10.0.45.0/30"| R5
+    R5 -.-|"10.0.51.0/30<br/>addressed, not cabled"| R1
+```
+
+> The R5–R1 link (`10.0.51.0/30`) is already addressed and covered by RIP, so connecting a serial cable between `R5 Serial0/1/0` and `R1 Serial0/1/1` closes the chain into a ring and gives every router a second path.
+
+### Addressing
+
+| Router | LAN interface | LAN subnet | DHCP pool | Excluded range | PCs |
+|--------|---------------|------------|-----------|----------------|-----|
+| R1 | Gi0/0/0 · 192.168.1.1 | 192.168.1.0/24 | `LAN1` | .1 – .10 | `PC0`, `PC1` |
+| R2 | Gi0/0/0 · 192.168.2.1 | 192.168.2.0/24 | `LAN2` | .1 – .10 | `PC2`, `PC3` |
+| R3 | Gi0/0/0 · 192.168.3.1 | 192.168.3.0/24 | `LAN3` | .1 – .10 | `PC4`, `PC5` |
+| R4 | Gi0/0/0 · 192.168.4.1 | 192.168.4.0/24 | `LAN4` | .1 – .10 | `PC6`, `PC7` |
+| R5 | Gi0/0/0 · 192.168.5.1 | 192.168.5.0/24 | `LAN5` | .1 – .10 | `PC8`, `PC9` |
+
+Every pool hands out the router as the default gateway and `8.8.8.8` as the DNS server, and all PCs are set to **DHCP**.
+
+### Serial links
+
+Every serial link is a `/30` carved from `10.0.0.0`, named after the two routers it joins. The `.1` end of each link is the **DCE** side and carries the clock rate.
+
+| Link | Network | Side A (DCE) | Side B (DTE) | Clock rate |
+|------|---------|--------------|--------------|-----------|
+| R1 – R2 | 10.0.12.0/30 | R1 Serial0/1/0 `.1` | R2 Serial0/1/1 `.2` | 64000 |
+| R2 – R3 | 10.0.23.0/30 | R2 Serial0/1/0 `.1` | R3 Serial0/1/1 `.2` | 2000000 |
+| R3 – R4 | 10.0.34.0/30 | R3 Serial0/1/0 `.1` | R4 Serial0/1/1 `.2` | 64000 |
+| R4 – R5 | 10.0.45.0/30 | R4 Serial0/1/0 `.1` | R5 Serial0/1/1 `.2` | 2000000 |
+| R5 – R1 | 10.0.51.0/30 | R5 Serial0/1/0 `.1` | R1 Serial0/1/1 `.2` | 64000 (not cabled) |
+
+### RIP configuration
+
+Each router advertises its own LAN plus the `10.0.0.0` serial block. Version 2 carries subnet masks, and `no auto-summary` stops RIP from collapsing the `192.168.x.0` subnets into one classful route.
+
+| Router | `network` statements |
+|--------|----------------------|
+| R1 | `10.0.0.0` · `192.168.1.0` |
+| R2 | `10.0.0.0` · `192.168.2.0` |
+| R3 | `10.0.0.0` · `192.168.3.0` |
+| R4 | `10.0.0.0` · `192.168.4.0` |
+| R5 | `10.0.0.0` · `192.168.5.0` |
+
+### Key configuration (R1 shown)
+
+```text
+R1(config)# interface GigabitEthernet0/0/0
+R1(config-if)# ip address 192.168.1.1 255.255.255.0
+R1(config-if)# no shutdown
+
+R1(config)# interface Serial0/1/0
+R1(config-if)# ip address 10.0.12.1 255.255.255.252
+R1(config-if)# clock rate 64000
+R1(config-if)# no shutdown
+
+R1(config)# interface Serial0/1/1
+R1(config-if)# ip address 10.0.51.2 255.255.255.252
+R1(config-if)# no shutdown
+
+R1(config)# ip dhcp excluded-address 192.168.1.1 192.168.1.10
+R1(config)# ip dhcp pool LAN1
+R1(dhcp-config)# network 192.168.1.0 255.255.255.0
+R1(dhcp-config)# default-router 192.168.1.1
+R1(dhcp-config)# dns-server 8.8.8.8
+
+R1(config)# router rip
+R1(config-router)# version 2
+R1(config-router)# network 10.0.0.0
+R1(config-router)# network 192.168.1.0
+R1(config-router)# no auto-summary
+```
+
+`R2` to `R5` follow the same pattern with their own LAN network, pool name, and serial addresses from the link table above.
+
+### Verify
+
+1. Open a PC → **Desktop → IP Configuration**, select **DHCP**, and confirm the address lands above the excluded range (for example `PC0` gets `192.168.1.11` or higher).
+2. Run `show ip route rip` on `R1`. Entries marked `R` should list `192.168.2.0`, `192.168.3.0`, `192.168.4.0`, and `192.168.5.0`.
+3. Run `show ip protocols` on any router to confirm RIP version 2, auto-summary off, and the advertised networks.
+4. Ping from `PC0` (LAN1) to `PC9` (LAN5). The packet crosses all five routers over RIP-learned routes.
+5. Run `tracert` from `PC0` to `PC9` and watch each router hop in order.
+6. Run `show ip dhcp binding` on each router to see which PCs leased which address.
+
+---
+
 ## Getting Started
 
 1. Clone the repository:
@@ -374,6 +496,7 @@ computer-networks-lab/
 ├── flsm.pkt            # Fixed-length subnetting (/25 x 2)
 ├── vlsm task.pkt       # Variable-length subnetting, 4 routers
 ├── vlsm new.pkt        # VLSM with router DHCP, 2 routers
+├── rip.pkt             # RIPv2 across 5 routers with router DHCP
 └── README.md
 ```
 
@@ -381,15 +504,17 @@ computer-networks-lab/
 
 - IPv4 addressing and subnetting (FLSM and VLSM)
 - Router interface, serial link (DCE clock rate), and static route configuration
+- Dynamic routing with RIP version 2, including `no auto-summary` and multi-hop route learning
 - DHCP on both a dedicated server and on routers, with excluded gateway addresses
 - Hierarchical LAN design with core and access switches
-- Testing and troubleshooting with `ping`, `tracert`, `show ip route`, and `show ip dhcp binding`
+- Testing and troubleshooting with `ping`, `tracert`, `show ip route`, `show ip protocols`, and `show ip dhcp binding`
 
 ## Tech Stack
 
 ![Cisco Packet Tracer](https://img.shields.io/badge/Cisco%20Packet%20Tracer-1BA0D7?style=flat-square)
 ![Cisco IOS](https://img.shields.io/badge/Cisco%20IOS-049fd9?style=flat-square&logo=cisco&logoColor=white)
 ![IPv4](https://img.shields.io/badge/IPv4-005FAD?style=flat-square)
+![RIPv2](https://img.shields.io/badge/RIPv2-0A7E8C?style=flat-square)
 
 ## Author
 
